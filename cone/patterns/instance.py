@@ -14,14 +14,3 @@ def instance(*args, **kwargs):
         return args[0]()
     return params_instance
 
-
-if __name__ == '__main__':
-    @instance(1, b=2, c=3)
-    class A:
-        def __init__(self, a, b, c=1):
-            print(f"I'm instance of A({a}, {b}, c={c})")
-
-    @instance
-    class B:
-        def __init__(self):
-            print("I'm instance of B()")
