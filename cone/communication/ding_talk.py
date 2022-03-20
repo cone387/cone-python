@@ -31,12 +31,12 @@ class DingRobot:
         sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
         return sign, timestamp
 
-    def send_msg(self):
+    def send_msg(self, content=None, msg_type="text"):
         # 每个机器人每分钟最多发送20条消息到群里，如果超过20条，会限流10分钟。
         sign, timestamp = self.get_sign_timestamp()
         data = {
-            "msgtype": "text",
-            "text": {"content": "我就是"}
+            "msgtype": msg_type,
+            msg_type: {"content": content}
         }
         params = {
             "access_token": self.token,
@@ -51,14 +51,3 @@ class DingRobot:
         return self.name
 
     __repr__ = __str__
-
-
-Robots = [
-    Robot(name='裘一', token='deca7812002f387023c9cc04b77d0a8c9ed1a4f703f19cd16e431806edb8c9bd', secret='SEC1692e6f5ba22183a6c9cc41a38bbb8e03a5537c90fb6a867b7e34f9ed27ad0f3'),
-    Robot(name='不上', token='18b48b2ddf7e13944fafb4a25f3129e50b70bd8f44e6b4704b5e93799f618505', secret='SEC551cb984408051fb0544bbca1c21b6c14abd5da9fd1f0c197ce1408f65e40858')
-]
-
-
-robot = random.choice(Robots)
-robot.send_msg()
-

@@ -41,3 +41,6 @@ def detect_os():
 
 if __name__ == '__main__':
     print("os is %s" % detect_os())
+
+
+
