@@ -5,3 +5,11 @@
 # software: PyCharm
 
 import signal
+
+
+def on_sys_interrupt(func):
+    signal.signal(signal.SIGTERM, func)
+    signal.signal(signal.SIGINT, func)
+
+
+

@@ -23,16 +23,23 @@ class Response(requests.Response):
     def xpath(self, path):
         return self.etree.xpath(path)
 
+# lib.hook_model_object('requests.Response', Response)
+# #
+#
+# response: Response = requests.get(
+#     'https://www.chinanews.com.cn/gn/2022/03-18/9706104.shtml',
+# )
+# response.encoding = 'utf8'
+# print(response.doc("h1:first").text())
+# print(response.xpath('//h1/text()')[0].strip())
 
-lib.hook_model_object('requests.Response', Response)
+# str.b = 1
 
+print.a = 1
 
-response: Response = requests.get(
-    'https://www.chinanews.com.cn/gn/2022/03-18/9706104.shtml',
-)
-response.encoding = 'utf8'
-print(response.doc("h1:first").text())
-print(response.xpath('//h1/text()')[0].strip())
+a = str(4)
+
+print(a.b)
 
 
 # print(requests.Response.doc)
