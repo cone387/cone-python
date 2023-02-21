@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='cone-lib',
+    name='py-cone',
     packages=find_packages(),
-    version='1.0.0',
+    version='1.0.1',
     # install_requires=[
     # ],
     # extras_require={
     # },
     license='MIT',
     url='https://github.com/cone387/cone-python',
-    python_requires='>=3.8, <4',
+    python_requires='>=3.7, <4',
 )
