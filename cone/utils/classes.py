@@ -147,7 +147,12 @@ class ClassManager(dict):
 
     def __getitem__(self, key):
         self._ensure_loaded()
-        return super(ClassManager, self).__getitem__(key)
+        cls = super(ClassManager, self).__getitem__(key)
+        if getattr(cls, '__generated__', False):
+            for key, value in getattr(cls, '__generated_args__', {}).items():
+                if key in self.unique_keys:
+                    setattr(cls, key, value)
+        return cls
 
     def __iter__(self):
         self._ensure_loaded()
@@ -165,19 +170,8 @@ class ClassManager(dict):
         self._ensure_loaded()
         return super(ClassManager, self).items()
 
-    def get(self, key, default=None):
-        try:
-            cls = self[key]
-            if getattr(cls, '__generated__', False):
-                for key, value in getattr(cls, '__generated_args__', {}).items():
-                    if key in self.unique_keys:
-                        setattr(cls, key, value)
-            return cls
-        except KeyError:
-            return default
-
     def find(self, **kwargs):
-        return self.get(self._gen_key(**kwargs))
+        return self[self._gen_key(**kwargs)]
 
     def __str__(self):
         return "ClassManager(path=%s, num=%s)" % (self.path, len(self))
