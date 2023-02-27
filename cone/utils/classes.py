@@ -12,8 +12,18 @@ WORKING_DIR_SPLIT = WORKING_DIR.split(os.sep)
 class ClassManager(dict):
     _mapping = {}
 
+    @staticmethod
+    def to_path_list(path):
+        if isinstance(path, pathlib.Path):
+            path [path]
+        elif isinstance(path, str):
+            path = path.split(',')
+        assert isinstance(path, list), "path must be list of string, but got %s" % type(path)
+        return path
+
     def __new__(cls, path=None, **kwargs):
-        key = path or kwargs.pop('name', None)
+        path = cls.to_path_list(path)
+        key = ",".join(path) or kwargs.pop('name', None)
         assert key, "path or name must be provided"
         if key not in cls._mapping:
             cls._mapping[key] = super(ClassManager, cls).__new__(cls)
@@ -23,7 +33,8 @@ class ClassManager(dict):
         super(ClassManager, self).__init__()
         assert unique_keys and isinstance(unique_keys, (str, list, tuple)), \
             "unique_keys must be string or list of string, but got %s" % type(unique_keys)
-        self.path = os.path.abspath(os.path.join(os.getcwd(), path)) if path else None
+        path = self.to_path_list(path)
+        self.path = [os.path.abspath(os.path.join(os.getcwd(), x)) for x in path] if path else []
         if isinstance(unique_keys, str):
             unique_keys = [unique_keys]
         self.unique_keys = unique_keys
@@ -101,6 +112,12 @@ class ClassManager(dict):
 
         return wrapper
 
+    def register_from(self, path):
+        if self._loaded:
+            self._load_classes(path)
+        else:
+            self.path.append(path)
+
     def _gen_key(self, **kwargs):
         if len(self.unique_keys) == 1:
             return kwargs[self.unique_keys[0]]
@@ -123,8 +140,9 @@ class ClassManager(dict):
         self[unique_key] = cls
 
     def _ensure_loaded(self):
-        if not self._loaded and self.path:
-            self._load_classes(self.path)
+        if not self._loaded:
+            for path in self.path:
+                self._load_classes(path)
             self._loaded = True
 
     def __getitem__(self, key):
