@@ -13,23 +13,25 @@ class ClassManager(dict):
     _mapping = {}
 
     @staticmethod
-    def to_path_list(path):
+    def to_path_list(path=None):
+        if path is None:
+            path = []
         if isinstance(path, pathlib.Path):
-            path [path]
+            path = [path]
         elif isinstance(path, str):
             path = path.split(',')
         assert isinstance(path, list), "path must be list of string, but got %s" % type(path)
         return path
 
-    def __new__(cls, path=None, **kwargs):
+    def __new__(cls, path=None, name=None, **kwargs):
         path = cls.to_path_list(path)
-        key = ",".join(path) or kwargs.pop('name', None)
+        key = ",".join(path) or name
         assert key, "path or name must be provided"
         if key not in cls._mapping:
             cls._mapping[key] = super(ClassManager, cls).__new__(cls)
         return cls._mapping[key]
 
-    def __init__(self, *, path=None, unique_keys=None):
+    def __init__(self, *, path=None, name=None, unique_keys=None):
         super(ClassManager, self).__init__()
         assert unique_keys and isinstance(unique_keys, (str, list, tuple)), \
             "unique_keys must be string or list of string, but got %s" % type(unique_keys)
@@ -38,6 +40,7 @@ class ClassManager(dict):
         if isinstance(unique_keys, str):
             unique_keys = [unique_keys]
         self.unique_keys = unique_keys
+        self.name = name
         self._loaded = False
 
     def _is_manageable_class(self, cls):
