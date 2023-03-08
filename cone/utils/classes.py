@@ -16,8 +16,6 @@ class ClassManager(dict):
     def to_path_list(path=None):
         if path is None:
             path = []
-        if isinstance(path, pathlib.Path):
-            path = [path]
         elif isinstance(path, str):
             path = path.split(',')
         assert isinstance(path, list), "path must be list of string, but got %s" % type(path)
@@ -36,7 +34,7 @@ class ClassManager(dict):
         assert unique_keys and isinstance(unique_keys, (str, list, tuple)), \
             "unique_keys must be string or list of string, but got %s" % type(unique_keys)
         path = self.to_path_list(path)
-        self.path = [os.path.abspath(os.path.join(os.getcwd(), x)) for x in path] if path else []
+        self.path = [x.replace(os.sep, '.') for x in path]
         if isinstance(unique_keys, str):
             unique_keys = [unique_keys]
         self.unique_keys = unique_keys
@@ -47,8 +45,12 @@ class ClassManager(dict):
         return getattr(cls, '__manager__', None) == self
 
     @staticmethod
-    def _is_manageable_file(file: pathlib.Path):
-        return file.suffix.endswith('py') and (not file.stem.startswith('_'))
+    def _is_python_module(file: pathlib.Path):
+        return file.suffix == '.py' and (not file.stem.startswith('_'))
+
+    @staticmethod
+    def _is_python_package(path: pathlib.Path):
+        return path.is_dir() and (path / '__init__.py').exists()
 
     @staticmethod
     def find_common_prefix(path1, path2):
@@ -58,30 +60,20 @@ class ClassManager(dict):
         return path1[:min(len(path1), len(path2))]
 
     @staticmethod
-    def _load_class(file: pathlib.Path):
-        # assert work_dir in str(file), "file %s is not in work_dir %s" % (file, work_dir)
-        module_path_split = ClassManager.find_common_prefix(WORKING_DIR_SPLIT, str(file).split(os.sep))
-        module_path = None
-        while module_path_split:
-            module_path = os.sep.join(module_path_split)
-            if module_path in sys.path:
-                break
-            module_path_split.pop()
-        assert module_path, "file %s is not in work_dir %s" % (file, WORKING_DIR)
-        module = file.relative_to(module_path).with_suffix('').as_posix().replace('/', '.')
-        importlib.import_module(module)
+    def _load_module(module_path):
+        return importlib.import_module(module_path)
 
-    def _load_classes(self, path_or_file: Union[str, pathlib.Path]):
-        if isinstance(path_or_file, str):
-            path_or_file = pathlib.Path(path_or_file)
-        if path_or_file.is_dir():
-            for p in path_or_file.glob('*'):
-                try:
-                    self._load_classes(p)
-                except ImportError:
-                    pass
-        elif path_or_file.is_file() and self._is_manageable_file(path_or_file):
-            self._load_class(path_or_file)
+    def _load_package(self, module_path: str):
+        try:
+            module = self._load_module(module_path)
+        except Exception as e:
+            raise ImportError("Failed to load %s: %s" % (module_path, e))
+        module_file = pathlib.Path(module.__file__)
+        if module_file.name == "__init__.py":
+            package = module_file.parent
+            for p in package.glob('*'):
+                if self._is_python_package(p) or self._is_python_module(p):
+                    self._load_package(module_path + '.' + p.stem)
 
     def __call__(self, *, is_registry=True, generator=None, overwritable=False, **kwargs):
         is_registry = is_registry or generator is not None
@@ -117,7 +109,7 @@ class ClassManager(dict):
 
     def register_from(self, path):
         if self._loaded:
-            self._load_classes(path)
+            self._load_package(path)
         else:
             self.path.append(path)
 
@@ -127,6 +119,12 @@ class ClassManager(dict):
         return tuple(kwargs[key] for key in self.unique_keys)
 
     def _add_class(self, cls, overwritable=False, generated=False, **kwargs):
+        for k in self.unique_keys:
+            v = kwargs.get(k, None)
+            if v is None:
+                v = getattr(cls, k, None)
+                kwargs[k] = v
+            assert v is not None, "class %s must have %s" % (cls.__name__, k)
         unique_key = self._gen_key(**kwargs)
         exists = super(ClassManager, self).get(unique_key, None)
         if exists and not getattr(exists, '__overwritable__', False):
@@ -145,7 +143,7 @@ class ClassManager(dict):
     def _ensure_loaded(self):
         if not self._loaded:
             for path in self.path:
-                self._load_classes(path)
+                self._load_package(path)
             self._loaded = True
 
     def __getitem__(self, key):
