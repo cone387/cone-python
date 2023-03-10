@@ -8,5 +8,5 @@ import hashlib
 
 def get_md5(string: str):
     m = hashlib.md5()
-    m.update(string)
+    m.update(string.encode(encoding='utf-8'))
     return m.hexdigest()
