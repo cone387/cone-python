@@ -84,10 +84,12 @@ class ClassManager(dict):
                     break
         if not is_registry:
             cls = self.find(**kwargs)
-            args = inspect.getfullargspec(cls).args
-            for k in self.unique_keys:
-                if k not in args:
-                    kwargs.pop(k)
+            spec = inspect.getfullargspec(cls)
+            if spec.varkw is None:
+                args = spec.args
+                for k in self.unique_keys:
+                    if k not in args:
+                        kwargs.pop(k)
             return cls(**kwargs)
         else:
             return self.register(generator=generator, overwritable=overwritable, **kwargs)
