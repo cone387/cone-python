@@ -55,15 +55,24 @@ class classproperty:
     Decorator that converts a method with a single cls argument into a property
     that can be accessed directly from the class.
     """
-    def __init__(self, method=None):
-        self.fget = method
+    def __init__(self, getter=None, setter=None):
+        self.fget = getter
+        self.fset = setter
 
     def __get__(self, instance, cls=None):
         return self.fget(cls)
 
+    def __set__(self, instance, value):
+        self.fset(instance, value)
+
     def getter(self, method):
         self.fget = method
         return self
+
+    def setter(self, method):
+        self.fset = method
+        return self
+
 
 class Promise:
     """
