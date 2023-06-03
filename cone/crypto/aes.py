@@ -4,10 +4,10 @@ except ImportError:
     raise ImportError("Please install pycryptodome first, pip install pycryptodome")
 from Crypto import Random
 import base64
-from enum import StrEnum
+from enum import Enum
 
 
-class Padding(StrEnum):
+class Padding(str, Enum):
     ZERO = 'ZERO'
     PKCS7 = 'PKCS7'
     PKCS5 = 'PKCS5'
