@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='py-cone',
     packages=find_packages(),
-    version='1.0.9',
+    version='1.1.0',
     # install_requires=[
     # ],
     # extras_require={
