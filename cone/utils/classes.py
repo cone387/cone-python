@@ -1,9 +1,7 @@
 import os
-import sys
 import pathlib
 import importlib
 import inspect
-from typing import Union
 
 WORKING_DIR = os.getcwd()
 WORKING_DIR_SPLIT = WORKING_DIR.split(os.sep)
@@ -17,14 +15,14 @@ class ClassManager(dict):
         if path is None:
             path = []
         elif isinstance(path, str):
-            path = path.split(',')
+            path = [x.strip() for x in path.split(',')]
         assert isinstance(path, list), "path must be list of string, but got %s" % type(path)
         return path
 
     def __new__(cls, path=None, name=None, **kwargs):
         path = cls.to_path_list(path)
-        key = ",".join(path) or name
-        assert key, "path or name must be provided"
+        key = name or ",".join(path)
+        assert key, "name or path must be provided"
         if key not in cls._mapping:
             cls._mapping[key] = super(ClassManager, cls).__new__(cls)
         return cls._mapping[key]
@@ -51,13 +49,6 @@ class ClassManager(dict):
     @staticmethod
     def _is_python_package(path: pathlib.Path):
         return path.is_dir() and (path / '__init__.py').exists()
-
-    @staticmethod
-    def find_common_prefix(path1, path2):
-        for i in range(min(len(path1), len(path2))):
-            if path1[i] != path2[i]:
-                return path1[:i]
-        return path1[:min(len(path1), len(path2))]
 
     @staticmethod
     def _load_module(module_path):
@@ -122,11 +113,11 @@ class ClassManager(dict):
 
     def _add_class(self, cls, overwritable=False, generated=False, **kwargs):
         for k in self.unique_keys:
-            v = kwargs.get(k, None)
-            if v is None:
-                v = getattr(cls, k, None)
-                kwargs[k] = v
-            assert v is not None, "class %s must have %s" % (cls.__name__, k)
+            if k not in kwargs:
+                try:
+                    kwargs[k] = getattr(cls, k)
+                except AttributeError:
+                    print("class %s must have %s" % (cls.__name__, k))
         unique_key = self._gen_key(**kwargs)
         exists = super(ClassManager, self).get(unique_key, None)
         if exists and not getattr(exists, '__overwritable__', False):
